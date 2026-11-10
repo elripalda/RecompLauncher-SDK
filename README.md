@@ -15,6 +15,7 @@ Levels 1 to 3 all come from one file, `recomplauncher.json`, in your release or 
 
 - [docs/guide.md](docs/guide.md): the full guide, the same one as [recomplauncher.com/sdk](https://recomplauncher.com/sdk)
 - [schema/recomplauncher.json](schema/recomplauncher.json): the JSON schema. Add `"$schema": "https://recomplauncher.com/schema/recomplauncher.json"` to your file and most editors will check it as you type.
+- [docs/standards.md](docs/standards.md): Recomp Standards, what makes a recomp easy to play: the file formats to accept (CHD, RVZ, NSP and more), releases, portable mode, settings and logs
 - [examples/](examples): two complete files, an Xbox 360 recomp with a settings file and a PS2 recomp with settings passed on the command line
 
 ## Get listed
