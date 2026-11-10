@@ -13,6 +13,8 @@ Levels 1 to 3 all come from one file, `recomplauncher.json`, in your release or 
 
 ## What's here
 
+- **[recomplauncher-agent.md](recomplauncher-agent.md)**: the whole SDK in one file, for your AI coding agent. Drop it in your project and ask it to follow it: it adds RecompLauncher support, fixes the easy Recomp Standards items, adds the badge, and ends with a report of what else would make your recomp better. Always current at https://recomplauncher.com/sdk-files/recomplauncher-agent.md
+
 - [docs/guide.md](docs/guide.md): the full guide, the same one as [recomplauncher.com/sdk](https://recomplauncher.com/sdk)
 - [schema/recomplauncher.json](schema/recomplauncher.json): the JSON schema. Add `"$schema": "https://recomplauncher.com/schema/recomplauncher.json"` to your file and most editors will check it as you type.
 - [docs/standards.md](docs/standards.md): Recomp Standards, what makes a recomp easy to play: the file formats to accept (CHD, RVZ, NSP and more), releases, portable mode, settings and logs
