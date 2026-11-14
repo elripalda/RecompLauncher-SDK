@@ -337,6 +337,55 @@ settings are written. It runs again whenever the player changes their copy.
 - Exit with 0 when it worked. Anything else shows as a failed setup, with your exit code.
 - Write what you make to the same place your launcher would, so both stay in step.
 
+#### `prepare.options`: ticks before the step runs
+
+Some builds can add things the player has to agree to first, like a library your builder downloads
+from NVIDIA or AMD under that company's license. List them in `options`, and each one shows as a
+tick on the setup screen, under Options, before your step runs. When it's ticked, its `args` go
+after the step's own. (RecompLauncher 0.90 Beta 46 and newer. Older launchers ignore `options`
+and run the step without them.)
+
+```json
+"prepare": {
+  "program": ["Longshot.AppImage", "LongshotBuilder.exe"],
+  "args": ["--cli", "--prepare", "--game", "{game}"],
+  "label": "Building the game from your copy (15 to 30 minutes)",
+  "timeout": 7200,
+  "options": [
+    {
+      "id": "dlss",
+      "label": "NVIDIA DLSS",
+      "note": "Sharper, faster picture on NVIDIA RTX cards.",
+      "args": ["--fetch-ngx-sdk", "--accept-nvidia-license"],
+      "gpu": "nvidia",
+      "license": { "name": "NVIDIA DLSS SDK license", "url": "https://github.com/NVIDIA/DLSS/blob/9981c6350dc58c0ce21f024fd65e31e851c31689/LICENSE.txt" }
+    },
+    {
+      "id": "fsr4",
+      "label": "AMD FSR 4",
+      "note": "For AMD Radeon RX 9000 cards.",
+      "args": ["--fsr", "--fetch-fsr-runtime", "--accept-amd-license"],
+      "gpu": "amd",
+      "os": ["windows"],
+      "license": { "name": "AMD FidelityFX SDK license", "url": "https://github.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/blob/7539ae8b6568ad29ed78a753404351daf3b5cca7/Kits/FidelityFX/docs/license.md" }
+    }
+  ]
+}
+```
+
+- `id`: a-z, 0-9 and `_`, different for each option. `label` and `note` are what the player reads.
+- `os` (optional): only shown on these systems (`windows`, `linux`, `macos`).
+- `gpu` (optional): only shown with that brand of graphics card. `nvidia` means an RTX card,
+  `amd` any AMD card.
+- `default` (optional): whether it starts ticked. Without it, an option starts ticked.
+- `license`: **anything your step downloads under a company's license must have one.** The tick
+  then reads "NVIDIA DLSS (I accept the NVIDIA DLSS SDK license)", with the name as a link to
+  `url`, and it always starts off: the player accepts it by ticking it themselves.
+- The launcher keeps each player's ticks for your game and shows them again when they set it up
+  again, so someone who skipped an option can add it later without reinstalling.
+- Options that don't apply to the player's PC aren't shown. With none left, there's no Options
+  section at all.
+
 ### `game.dumps`: known good copies
 
 ```json
