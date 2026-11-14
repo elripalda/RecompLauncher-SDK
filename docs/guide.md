@@ -236,8 +236,9 @@ can't add them from outside. It can give players one clear place to turn them on
 }
 ```
 
-DLSS ships through NVIDIA's Streamline SDK, which is free to use. If you're adding it, the
-setting above is all the launcher needs.
+DLSS comes from NVIDIA's SDK, through Streamline or NGX directly. It isn't open source, so most
+recomps can't ship it. The setting above only turns it on: to get the SDK to the player, see
+**Vendor SDKs the build needs** under `prepare`.
 
 ### Looks
 
@@ -385,6 +386,27 @@ and run the step without them.)
   again, so someone who skipped an option can add it later without reinstalling.
 - Options that don't apply to the player's PC aren't shown. With none left, there's no Options
   section at all.
+
+#### Vendor SDKs the build needs
+
+Some features can't be built without a vendor's SDK, like NVIDIA's DLSS (NGX). You can't ship it,
+and the launcher can't add it from outside. Have your builder fetch it on the player's PC, after
+the player agrees to the vendor's license:
+
+1. Give the builder a flag that downloads the SDK from the vendor, and a second flag that says
+   the license was accepted. Without the second, it downloads nothing and stops.
+2. Add a `prepare.options` tick, as above, with both flags in `args`, a `license`, and `gpu`
+   (`nvidia` for DLSS). Ticking it is the player accepting the license.
+3. Keep the SDK in a folder of your builder's own. The launcher sets no environment variables for
+   `prepare`, so the flags must work without any: a variable you read today can still override the
+   folder, but it can't be required. Check it by running the builder exactly as the launcher does:
+   the arguments above, nothing else set.
+4. Put the vendor's runtime files where the game looks for them, never in your release. For
+   DLSS, that is `nvngx_dlss.dll`, and `nvngx_dlssg.dll` for frame generation, in an `ngx` folder
+   in the game's folder.
+5. With the tick off, the build must be the one you ship today.
+6. Print `progress` lines while it downloads. If it fails, exit with a code other than 0 and
+   write the reason in your own log: the player sees "Its setup step stopped with code N".
 
 ### `game.dumps`: known good copies
 

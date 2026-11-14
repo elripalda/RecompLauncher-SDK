@@ -11,6 +11,7 @@ For an AI coding agent working in a recomp's repository. Read all of it before c
    - Level 1, Easy Setup (`game` and `start`): the player picks their copy, the launcher checks it, sets it up and starts the game.
    - Level 2, settings in the launcher (`config` and `settings`): the project's settings file or command-line options, shown in the launcher.
    - Level 3, full setup (`prepare` and `game.dumps`): a windowless setup step with progress lines, and the known good copies of the game.
+   - A vendor's SDK (NVIDIA DLSS, AMD FSR 4 and the like): if the project can use one but doesn't ship it, because it isn't open source or its license forbids that, see **Vendor SDKs the build needs** in the guide below. A build that needs the SDK at build time gets a `prepare.options` tick.
 3. **Ship it in every release.** Put `recomplauncher.json` at the top of each release zip, next to the executable, and inside the AppImage at `/recomplauncher.json` if there is one. Update the release workflow or packaging script so it's always included.
 4. **Check the project against the Recomp Standards** (the section of that name in the guide below). Fix the ones that are small and safe, most of all accepting the standard file formats for its console (CHD for disc-based consoles, decrypted dumps for PS3, PS4, PS5 and Vita, a `--keys <path>` option where the player's own keys are needed, and so on). Leave the bigger ones for the report in step 7.
 5. **Add the "Get it on RecompLauncher" badge** near the top of the README, linking to the recomp's page. If it's listed on RecompLauncher, its page is https://recomplauncher.com/game/RECOMP_ID: find its `id` in https://recomplauncher.com/pc-catalog-web.json by matching its `repo` (owner/name on GitHub). If it isn't listed yet, link to https://recomplauncher.com. Use this exactly, so it follows GitHub's light and dark themes:
@@ -27,6 +28,7 @@ For an AI coding agent working in a recomp's repository. Read all of it before c
 - **Reuse what's there.** Don't rewrite the project's installer, file checks or settings code.
 - **Keep the project's style**, keep the diff small, and put code changes in their own commit, separate from `recomplauncher.json` and the packaging changes.
 - **Don't change gameplay, graphics, saves or config formats.**
+- **Never accept a license for the player.** Don't download a vendor's SDK into the repository, don't commit or release its files, and don't turn its license flag on by default. The player accepts by ticking the option, and only the builder's own code fetches the SDK, at their PC.
 - **Never invent values.** For `game.dumps`, only use sizes and CRC32s you can verify from [Redump](http://redump.org), [No-Intro](https://no-intro.org) or the project's own docs. If you can't verify one, leave it out and say so in the report.
 - **If you open a pull request**, give it a short, friendly description: what it adds for players, then the code changes listed separately, noting they only apply when the launcher passes the new arguments. Large code changes can go in a second pull request.
 
@@ -39,6 +41,8 @@ End with a message to the developer, in this shape:
 > **What I checked, and how**: the schema check, the build, the start without new arguments, and where the `dumps` values came from.
 >
 > **Things that would make your recomp better**: one line each for every Recomp Standard the project doesn't meet yet and you didn't change: what it is, why players care, and roughly how big a change it is (small, medium, large). Include Recomp Achievements if the project doesn't have it: achievements, Beaten and Mastered games, and leaderboards for its players (https://github.com/elripalda/RecompAchievements).
+>
+> **Vendor SDKs**: for each feature that needs one (DLSS, FSR 4 and so on), whether it is a `prepare.options` tick, and what the build does when the player leaves it off.
 >
 > **Anything I wasn't sure about.**
 >
@@ -286,8 +290,9 @@ can't add them from outside. It can give players one clear place to turn them on
 }
 ```
 
-DLSS ships through NVIDIA's Streamline SDK, which is free to use. If you're adding it, the
-setting above is all the launcher needs.
+DLSS comes from NVIDIA's SDK, through Streamline or NGX directly. It isn't open source, so most
+recomps can't ship it. The setting above only turns it on: to get the SDK to the player, see
+**Vendor SDKs the build needs** under `prepare`.
 
 ### Looks
 
@@ -435,6 +440,27 @@ and run the step without them.)
   again, so someone who skipped an option can add it later without reinstalling.
 - Options that don't apply to the player's PC aren't shown. With none left, there's no Options
   section at all.
+
+#### Vendor SDKs the build needs
+
+Some features can't be built without a vendor's SDK, like NVIDIA's DLSS (NGX). You can't ship it,
+and the launcher can't add it from outside. Have your builder fetch it on the player's PC, after
+the player agrees to the vendor's license:
+
+1. Give the builder a flag that downloads the SDK from the vendor, and a second flag that says
+   the license was accepted. Without the second, it downloads nothing and stops.
+2. Add a `prepare.options` tick, as above, with both flags in `args`, a `license`, and `gpu`
+   (`nvidia` for DLSS). Ticking it is the player accepting the license.
+3. Keep the SDK in a folder of your builder's own. The launcher sets no environment variables for
+   `prepare`, so the flags must work without any: a variable you read today can still override the
+   folder, but it can't be required. Check it by running the builder exactly as the launcher does:
+   the arguments above, nothing else set.
+4. Put the vendor's runtime files where the game looks for them, never in your release. For
+   DLSS, that is `nvngx_dlss.dll`, and `nvngx_dlssg.dll` for frame generation, in an `ngx` folder
+   in the game's folder.
+5. With the tick off, the build must be the one you ship today.
+6. Print `progress` lines while it downloads. If it fails, exit with a code other than 0 and
+   write the reason in your own log: the player sees "Its setup step stopped with code N".
 
 ### `game.dumps`: known good copies
 
