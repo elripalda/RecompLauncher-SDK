@@ -79,7 +79,8 @@ before retrying. No guessed firmware-version database or automatic title-key ext
 See [the complete example](../examples/multidisc-inputs.json). Declare one input for each disc with
 `role: "disc"`, and one for each DLC with `role: "dlc", "optional": true`. Required is the default.
 `label` should say exactly which disc/version/content to choose. A `file` format may list accepted
-extensions without a leading dot; an empty list accepts any regular file. A `folder` format accepts
+extensions without a leading dot; an empty list accepts any regular file. The launcher's file
+pickers show only these extensions. A `folder` format accepts
 a selected existing folder and cannot declare extensions or an installation destination.
 
 You can pass every selected path to `prepare.args`, `start.args`, `start.env`, or a game's
