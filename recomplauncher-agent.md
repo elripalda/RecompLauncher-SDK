@@ -29,7 +29,7 @@ For an AI coding agent working in a recomp's repository. Read all of it before c
 - **Reuse what's there.** Don't rewrite the project's installer, file checks or settings code.
 - **Keep the project's style**, keep the diff small, and put code changes in their own commit, separate from `recomplauncher.json` and the packaging changes.
 - **Don't change gameplay, graphics, saves or config formats.**
-- **Never accept a license for the player.** Don't download a vendor's SDK into the repository, don't commit or release its files, and don't turn its license flag on by default. The player accepts by ticking the option, and only the builder's own code fetches the SDK, at their PC.
+- **Never accept a license for the player.** Don't download a vendor's SDK into the repository, don't commit or release its files, and don't turn its license flag on by default. The player accepts by ticking the option, and only your setup step's own code fetches the SDK, at their PC.
 - **Never invent values.** For `game.dumps`, only use sizes and CRC32s you can verify from [Redump](http://redump.org), [No-Intro](https://no-intro.org) or the project's own docs. If you can't verify one, leave it out and say so in the report.
 - **If you open a pull request**, give it a short, friendly description: what it adds for players, then the code changes listed separately, noting they only apply when the launcher passes the new arguments. Large code changes can go in a second pull request.
 
@@ -146,7 +146,8 @@ goes along; what it writes anywhere else is left behind. So:
   out, so a shader cache never fills a player's save copies.
 - **Temp is temp.** Your setup step gets a temp folder of its own (see [`prepare`](#prepare-your-own-setup-step)),
   emptied after every run. Nothing you need later goes there.
-- **Name both programs.** `start.program` and `prepare.program` say which file runs. Don't copy
+- **Name the program in both.** `start.program` and `prepare.program` say which file runs. Make it
+  the one program you ship, with a flag for the setup step (see [Ship one program](#releases)). Don't copy
   yourself somewhere else and run from there (bootstrapping): the launcher updates the copy in the
   game's folder, so the other one goes stale.
 - **Don't depend on `$APPIMAGE`.** On Linux the launcher always unpacks your AppImage and runs it
@@ -738,7 +739,7 @@ settings are written. It runs again whenever the player changes their copy.
 
   ```json
   "prepare": {
-    "program": ["MyRecompBuilder.exe"],
+    "program": ["MyRecomp.exe"],
     "args": ["--prepare", "--game", "{game}"],
     "env": { "MYRECOMP_CACHE": "{data}/cache" }
   }
@@ -764,9 +765,10 @@ settings are written. It runs again whenever the player changes their copy.
   `version` by itself: when the step builds the game itself (its recompiled program), so every
   release needs a new build, put your release version in `version` each time you package one
   (`"version": "0.4.2"`). Without it, players keep playing the build of the release they set up.
-- To build into the player's install folder instead of their home folder, pass it to your builder
-  (`"args": ["--cli", "--prepare", "--game={game}", "--out", "{install}/YourGame"]`) and start
-  from the same place (`"start": {"args": ["--play", "{install}/YourGame"]}`, and `folders.game`).
+- To build into the player's install folder instead of their home folder, pass it to your setup step
+  (`"args": ["--cli", "--prepare", "--game={game}", "--out", "{install}/YourGame"]`) and have the
+  same program start the game from there (`"start": {"program": ["YourGame.exe"], "args": ["--play", "{install}/YourGame"]}`,
+  and `folders.game`).
   When that folder is gone, Play builds the game again, as it does for a folder under `{home}`.
 - `"done"` (optional): the files the step leaves when it has finished, like
   `["{home}/Games/YourGame/prepared.bin"]`. When they're all there, the game counts as set up, even
@@ -787,10 +789,11 @@ settings are written. It runs again whenever the player changes their copy.
   or the run fails, the player is asked for their copy and the game is built from that.
 
   ```json
+  "start": { "program": ["YourGame.exe"], "args": ["--play", "{install}/YourGame"] },
   "prepare": {
-    "program": ["YourGameBuilder.exe"],
+    "program": ["YourGame.exe"],
     "args": ["--cli", "--prepare", "--game={game}", "--out", "{install}/YourGame"],
-    "done": ["{install}/YourGame/yourgame.exe"],
+    "done": ["{install}/YourGame/game.pak"],
     "keeps_copy": true
   },
   "folders": { "game": [{ "path": "{install}/YourGame" }] }
@@ -820,7 +823,7 @@ when it's on its `args` are added after the step's own:
 
 ```json
 "prepare": {
-  "program": ["LongshotBuilder.exe"],
+  "program": ["Longshot.exe"],
   "args": ["--cli", "--prepare", "--game", "{game}"],
   "options": [
     {
@@ -846,7 +849,7 @@ when it's on its `args` are added after the step's own:
   stay off, with a line saying why, until it's ticked, and the launcher refuses to start the step
   without it. Only the PCs it's shown on count: an option `os` or `gpu` hides is never required
   there. With a `license` it still starts off: only the player accepts it. Launchers older than
-  0.90.0-beta.64 don't know `required` and show a plain tick, so keep your builder's own check
+  0.90.0-beta.64 don't know `required` and show a plain tick, so keep your setup step's own check
   (exit with a code and say why) until your `min` is that version:
 
   ```json
@@ -862,7 +865,7 @@ when it's on its `args` are added after the step's own:
     }
   ]
   ```
-- Your builder gets these args added to its own, with the step's usual environment. Where to put
+- Your setup step gets these args added to its own, with the step's usual environment. Where to put
   the SDK and its runtime files: [Vendor SDKs the build needs](#vendor-sdks-the-build-needs).
 - Print `progress` lines for the download too. If it fails, exit with a code other than 0: the
   player sees "Its setup step stopped with code N", so put the reason in your own log.
@@ -874,17 +877,17 @@ when it's on its `args` are added after the step's own:
 #### Vendor SDKs the build needs
 
 Some features can't be built without a vendor's SDK, like NVIDIA's DLSS (NGX). You can't ship it,
-and the launcher can't add it from outside. Have your builder fetch it on the player's PC, after
+and the launcher can't add it from outside. Have your setup step fetch it on the player's PC, after
 the player agrees to the vendor's license:
 
-1. Give the builder a flag that downloads the SDK from the vendor, and a second flag that says
+1. Give your program a flag that downloads the SDK from the vendor, and a second flag that says
    the license was accepted. Without the second, it downloads nothing and stops.
 2. Add a `prepare.options` tick, as above, with both flags in `args`, a `license`, and `gpu`
    (`nvidia` for DLSS). Ticking it is the player accepting the license.
 3. Download the SDK to the step's temp folder (`TEMP`, `TMP`, `TMPDIR`), which is emptied after
    every run, or to `{data}/cache` to reuse it on the next one. The step gets
    `RECOMPLAUNCHER_DATA` and whatever you set in `prepare.env`, and nothing else of yours: a
-   variable from your own setup can't be required. Check it by running the builder exactly as the
+   variable from your own setup can't be required. Check it by running the step exactly as the
    launcher does, with the arguments above and that environment.
 4. Put the vendor's runtime files where the game looks for them, never in your release. For
    DLSS, that is `nvngx_dlss.dll`, and `nvngx_dlssg.dll` for frame generation, in an `ngx` folder
@@ -1044,6 +1047,7 @@ CHD is the format most disc-based backups come in, and the one players ask for m
 ### Releases
 
 - **Tag every release with a version** (`v1.2.0`) and attach the builds to the GitHub release, not just to the README or Actions.
+- **Ship one program, and keep it the one players start.** Don't ship a builder that makes the game's program. If the game has to be built on the player's PC, the program you ship (`MyRecomp.exe`) builds it and then runs it, and the player never sees the built binary. Don't name it "builder", "compiler" or the like, and never change what the player starts after the build: `start.program`, their shortcut and their Steam entry stay on the program you shipped. [LostOdysseyRecomp](https://github.com/freefrank/LostOdysseyRecomp/blob/main/recomplauncher.json) works this way: `LostOdysseyRecomp.exe --prepare-content` is its setup step, and the same `LostOdysseyRecomp.exe` is the game.
 - **Name every file for what it is**, the same way every time: `yourgame-1.2.0-windows-x64.zip`, `-linux-x86_64.tar.gz` and `-linux-x86_64.AppImage`, `-macos-arm64.zip`. [Releases that install cleanly](#releases-that-install-cleanly) has the rest: the words a launcher picks a file by, one portable Linux build packed both ways, `source` in a source archive's name, and staying out of Program Files.
 - **Build for Linux and Mac too** when you can. A lot of players are on Steam Deck.
 - **Say what changed** in the release notes, even in one line.
@@ -1748,7 +1752,7 @@ Also at https://recomplauncher.com/schema/recomplauncher.json. Add `"$schema": "
         },
         "options": {
           "type": "array",
-          "description": "Ticks shown on the setup screen before the step runs. Each one adds its args when it's on. For a vendor's SDK your builder downloads, like NVIDIA's DLSS SDK: the player accepts its license by ticking it.",
+          "description": "Ticks shown on the setup screen before the step runs. Each one adds its args when it's on. For a vendor's SDK your setup step downloads, like NVIDIA's DLSS SDK: the player accepts its license by ticking it.",
           "items": {
             "type": "object",
             "required": [
@@ -1817,7 +1821,7 @@ Also at https://recomplauncher.com/schema/recomplauncher.json. Add `"$schema": "
               "required": {
                 "type": "boolean",
                 "default": false,
-                "description": "Setup can't start until it's ticked, on the PCs it's shown on (os and gpu still decide that). For terms the build can't run without, like a compiler's license: with a license it still starts off, and the player accepts it by ticking it. Launchers older than 0.90.0-beta.64 ignore it, so keep your builder's own check too until your min is that version."
+                "description": "Setup can't start until it's ticked, on the PCs it's shown on (os and gpu still decide that). For terms the build can't run without, like a compiler's license: with a license it still starts off, and the player accepts it by ticking it. Launchers older than 0.90.0-beta.64 ignore it, so keep your setup step's own check too until your min is that version."
               }
             },
             "additionalProperties": false
