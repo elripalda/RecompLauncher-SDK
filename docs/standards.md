@@ -39,6 +39,7 @@ CHD is the format most disc-based backups come in, and the one players ask for m
 ## Releases
 
 - **Tag every release with a version** (`v1.2.0`) and attach the builds to the GitHub release, not just to the README or Actions.
+- **Ship one program, and keep it the one players start.** Don't ship a builder that makes the game's program. If the game has to be built on the player's PC, the program you ship (`MyRecomp.exe`) builds it and then runs it, and the player never sees the built binary. Don't name it "builder", "compiler" or the like, and never change what the player starts after the build: `start.program`, their shortcut and their Steam entry stay on the program you shipped. [LostOdysseyRecomp](https://github.com/freefrank/LostOdysseyRecomp/blob/main/recomplauncher.json) works this way: `LostOdysseyRecomp.exe --prepare-content` is its setup step, and the same `LostOdysseyRecomp.exe` is the game.
 - **Name every file for what it is**, the same way every time: `yourgame-1.2.0-windows-x64.zip`, `-linux-x86_64.tar.gz` and `-linux-x86_64.AppImage`, `-macos-arm64.zip`. [Releases that install cleanly](guide.md#releases-that-install-cleanly) has the rest: the words a launcher picks a file by, one portable Linux build packed both ways, `source` in a source archive's name, and staying out of Program Files.
 - **Build for Linux and Mac too** when you can. A lot of players are on Steam Deck.
 - **Say what changed** in the release notes, even in one line.

@@ -4,7 +4,7 @@
 
 | | What players get | What you add |
 | --- | --- | --- |
-| **Launch** | Drop in a disc, it's checked and set up, Play starts the game. Shows as Easy Setup. | `game` and `start` in `recomplauncher.json` |
+| **Launch** | Drop in a disc, it's checked and set up, Play starts the game. Shows as Easy Setup. | `inputs` and `start` in `recomplauncher.json` |
 | **Settings** | Your video and gameplay settings on the game's page and in Big Picture mode | `config` and `settings` |
 | **Preparation** | Your own setup step that runs once before Play | `prepare` |
 | **Verification** | A verified badge when the player's copy matches a known dump | `dumps` |
